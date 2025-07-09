@@ -61,4 +61,21 @@ public class account_service_imp implements account_service {
         if(user.isLocked())throw new DataException("Tai khoan nay da bi khoa !!!");
         return user;
     }
+    public String checkmail(String mail)
+    {
+        if(userRepository.findUserByEmail(mail)==null) throw new DataException("Khong tim thay tai khoan voi email : "+mail);
+        if(mail==null||mail.isEmpty())throw new IllegalArgumentException("Khong dc de gmail chong");
+        return mail;
+    }
+    public User doimk(User user)
+    {
+        User u = userRepository.findUserByEmail(user.getEmail());
+        if(u==null) throw new DataException("khong tim thay tai khoan voi email : "+user.getEmail());
+        if(user.getPassword()==null||user.getPassword().trim().isEmpty()||!PASSWORD_PATTERN.matcher(user.getPassword()).matches()){
+            throw new IllegalArgumentException("Mat khau ko dc de chong va phai co chu hoa, chu thuong, so, ky tu dac biet và toi thieu 8 ky tu");
+        }
+        String encodedPassword = passwordEncoder.encode(user.getPassword());
+        u.setPassword(encodedPassword);
+        return userRepository.save(u);
+    }
 }

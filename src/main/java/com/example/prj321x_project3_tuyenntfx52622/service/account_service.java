@@ -6,4 +6,6 @@ import org.springframework.dao.DataAccessException;
 public interface account_service {
     public User dangky(User user) throws DataAccessException,IllegalArgumentException;
     public User dangnhap(String email, String password) throws DataAccessException;
+    public String checkmail(String mail) throws DataAccessException,IllegalArgumentException;
+    public User doimk(User user) throws DataAccessException,IllegalArgumentException;
 }

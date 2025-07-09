@@ -21,7 +21,7 @@ public class SecurityConfig {
         http
                 .authorizeHttpRequests(authorizeRequests ->
                         authorizeRequests
-                                .requestMatchers("/account/createUser", "/account/dangnhap").permitAll() // Cho phép truy cập không cần xác thực
+                                .requestMatchers("/account/createUser", "/account/dangnhap","account/forgotPassword","account/resetpassword").permitAll() // Cho phép truy cập không cần xác thực
                                 .anyRequest().authenticated() // Các endpoint khác yêu cầu xác thực
                 )
                 .csrf(csrf -> csrf.disable()) // Tắt CSRF (deprecated, cần cải thiện sau)
