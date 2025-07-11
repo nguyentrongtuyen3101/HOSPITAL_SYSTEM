@@ -51,7 +51,7 @@ public class account_service_imp implements account_service {
         {
             throw new IllegalArgumentException("Dia chi ko dc de chong");
         }
-        if(userRepository.existsUsersByEmail(user.getEmail()))
+        if(userRepository.existsUsersByEmail(user.getEmail())||adminRepository.existsByEmail(user.getEmail())||doctorRepository.existsByEmail(user.getEmail()))
         {
             throw new DataException("Gmail "+user.getEmail().toString()+" da dc dang ky");
         }
@@ -59,14 +59,18 @@ public class account_service_imp implements account_service {
         user.setPassword(encodedPassword);
         return userRepository.save(user);
     }
+    @Override
+    @Transactional
     public User dangnhapUser(String email, String password)
     {
         User user = userRepository.findUserByEmail(email);
         if(user==null)throw new DataException("khong tim thay tai khoan voi email : "+email );
         if (!passwordEncoder.matches(password, user.getPassword())) throw new DataException("Mat khau khong chinh xac");
-        if(user.isLocked())throw new DataException("Tai khoan nay da bi khoa !!!");
+        if(user.isLocked())throw new DataException("Tai khoan nay da bi khoa vi "+user.getLockReason());
         return user;
     }
+    @Override
+    @Transactional
     public Admin dangnhapAdmin(String email, String password)
     {
         Admin admin = adminRepository.findByEmail(email);
@@ -75,14 +79,18 @@ public class account_service_imp implements account_service {
         if(admin.isLocked())throw new DataException("Tai khoan nay da bi khoa !!!");
         return admin;
     }
+    @Override
+    @Transactional
     public Doctor dangnhapDoctor(String email, String password)
     {
         Doctor doctor = doctorRepository.findByEmail(email);
         if(doctor==null)throw new DataException("khong tim thay tai khoan voi email : "+email );
         if (!passwordEncoder.matches(password, doctor.getPassword())) throw new DataException("Mat khau khong chinh xac");
-        if(doctor.isLocked())throw new DataException("Tai khoan nay da bi khoa !!!");
+        if(doctor.isLocked())throw new DataException("Tai khoan nay da bi khoa vi "+doctor.getLockReason());
         return doctor;
     }
+    @Override
+    @Transactional
     public String checkmail(String mail)
     {
         if(userRepository.findUserByEmail(mail)==null&&adminRepository.findByEmail(mail)==null&&doctorRepository.findByEmail(mail)==null) throw new DataException("Khong tim thay tai khoan voi email : "+mail);
@@ -97,6 +105,8 @@ public class account_service_imp implements account_service {
         }
         return mail;
     }
+    @Override
+    @Transactional
     public void doimk(String role,String mail,String password)
     {
         if(password==null||password.trim().isEmpty()||!PASSWORD_PATTERN.matcher(password).matches()){

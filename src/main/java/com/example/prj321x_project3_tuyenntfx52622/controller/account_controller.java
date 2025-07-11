@@ -59,7 +59,7 @@ public class account_controller {
             claims.put("fullName", user.getFullName());
             claims.put("id", user.getUserId());
             UserDetails userDetails = userDetailsService.loadUserByUsername(user.getEmail());
-            String token = jwtUtil.generateToken(userDetails);
+            String token = jwtUtil.generateToken(userDetails,claims);
             response.put("token", token);
             response.put("email", user.getEmail());
             response.put("fullName", user.getFullName());
@@ -72,7 +72,7 @@ public class account_controller {
             claims.put("fullName", admin.getFullName());
             claims.put("id", admin.getAdminId());
             UserDetails userDetails = userDetailsService.loadUserByUsername(admin.getEmail());
-            String token = jwtUtil.generateToken(userDetails);
+            String token = jwtUtil.generateToken(userDetails,claims);
             response.put("token", token);
             response.put("email", admin.getEmail());
             response.put("fullName", admin.getFullName());
@@ -85,7 +85,7 @@ public class account_controller {
             claims.put("fullName", doctor.getFullName());
             claims.put("id", doctor.getDoctorId());
             UserDetails userDetails = userDetailsService.loadUserByUsername(doctor.getEmail());
-            String token = jwtUtil.generateToken(userDetails);
+            String token = jwtUtil.generateToken(userDetails,claims);
             response.put("token", token);
             response.put("email", doctor.getEmail());
             response.put("fullName", doctor.getFullName());
@@ -111,7 +111,7 @@ public class account_controller {
         response.put("message", "Vui lòng kiểm tra email để đặt lại mật khẩu");
         return new ResponseEntity<>(response, HttpStatus.OK);
     }
-    @PostMapping("/resetpassword")
+    @PutMapping("/resetpassword")
     public ResponseEntity<?> resetpassword(@RequestBody Map<String, Object> request)
     {
         String gmail = (String) request.get("email");

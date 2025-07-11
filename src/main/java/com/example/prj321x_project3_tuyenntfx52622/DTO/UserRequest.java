@@ -1,11 +1,6 @@
 package com.example.prj321x_project3_tuyenntfx52622.DTO;
-
 import com.example.prj321x_project3_tuyenntfx52622.entity.User;
-import jakarta.persistence.Column;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
 import lombok.Data;
-
 @Data
 public class UserRequest {
 

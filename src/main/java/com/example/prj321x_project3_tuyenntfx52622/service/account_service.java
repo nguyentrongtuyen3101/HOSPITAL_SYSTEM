@@ -4,6 +4,7 @@ import com.example.prj321x_project3_tuyenntfx52622.entity.Admin;
 import com.example.prj321x_project3_tuyenntfx52622.entity.Doctor;
 import com.example.prj321x_project3_tuyenntfx52622.entity.User;
 import org.springframework.dao.DataAccessException;
+import org.springframework.stereotype.Service;
 
 public interface account_service {
     public User dangky(User user) throws DataAccessException,IllegalArgumentException;

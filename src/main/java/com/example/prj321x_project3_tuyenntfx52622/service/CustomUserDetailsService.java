@@ -33,7 +33,7 @@ public class CustomUserDetailsService implements UserDetailsService {
             return new org.springframework.security.core.userdetails.User(
                     user.getEmail(),
                     user.getPassword(),
-                    Collections.singletonList(new SimpleGrantedAuthority(user.getRole().name()))
+                    Collections.singletonList(new SimpleGrantedAuthority("ROLE_" + user.getRole().name()))
             );
         }
 
@@ -43,7 +43,7 @@ public class CustomUserDetailsService implements UserDetailsService {
             return new org.springframework.security.core.userdetails.User(
                     admin.getEmail(),
                     admin.getPassword(),
-                    Collections.singletonList(new SimpleGrantedAuthority(admin.getRole().name()))
+                    Collections.singletonList(new SimpleGrantedAuthority("ROLE_" + admin.getRole().name()))
             );
         }
 
@@ -53,7 +53,7 @@ public class CustomUserDetailsService implements UserDetailsService {
             return new org.springframework.security.core.userdetails.User(
                     doctor.getEmail(),
                     doctor.getPassword(),
-                    Collections.singletonList(new SimpleGrantedAuthority(doctor.getRole().name()))
+                    Collections.singletonList(new SimpleGrantedAuthority("ROLE_" + doctor.getRole().name()))
             );
         }
 

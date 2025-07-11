@@ -11,23 +11,15 @@ import lombok.NoArgsConstructor;
 @Entity
 @Table(name = "doctor_specialties")
 public class DoctorSpecialty {
-    @EmbeddedId
-    private DoctorSpecialtyId id;
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id; // Khóa chính đơn, tự tăng
 
     @ManyToOne
-    @MapsId("doctorId")
-    @JoinColumn(name = "doctor_id")
+    @JoinColumn(name = "doctor_id", nullable = false)
     private Doctor doctor;
 
     @ManyToOne
-    @MapsId("specialtyId")
-    @JoinColumn(name = "specialty_id")
+    @JoinColumn(name = "specialty_id", nullable = false)
     private Specialty specialty;
-
-    @Embeddable
-    @Data
-    public static class DoctorSpecialtyId implements java.io.Serializable {
-        private Long doctorId;
-        private Long specialtyId;
-    }
 }
