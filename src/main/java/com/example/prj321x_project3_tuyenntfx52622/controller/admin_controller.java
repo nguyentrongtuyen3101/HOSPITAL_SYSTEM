@@ -1,18 +1,16 @@
 package com.example.prj321x_project3_tuyenntfx52622.controller;
 
 import com.example.prj321x_project3_tuyenntfx52622.DTO.DoctorSpecialtyRequest;
+import com.example.prj321x_project3_tuyenntfx52622.DTO.FacilityServiceRequest;
 import com.example.prj321x_project3_tuyenntfx52622.DTO.MedicalServiceRequest;
 import com.example.prj321x_project3_tuyenntfx52622.DTO.SpecialtyRequest;
-import com.example.prj321x_project3_tuyenntfx52622.entity.Doctor;
-import com.example.prj321x_project3_tuyenntfx52622.entity.DoctorSpecialty;
-import com.example.prj321x_project3_tuyenntfx52622.entity.MedicalService;
-import com.example.prj321x_project3_tuyenntfx52622.entity.Specialty;
-import com.example.prj321x_project3_tuyenntfx52622.repository.AdminRepository;
-import com.example.prj321x_project3_tuyenntfx52622.repository.SpecialtyRepository;
+import com.example.prj321x_project3_tuyenntfx52622.entity.*;
+import com.example.prj321x_project3_tuyenntfx52622.repository.*;
 import com.example.prj321x_project3_tuyenntfx52622.rest.DataException;
 import com.example.prj321x_project3_tuyenntfx52622.service.account_service;
 import com.example.prj321x_project3_tuyenntfx52622.service.admin_service;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DataAccessException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -20,7 +18,9 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -36,6 +36,12 @@ public class admin_controller {
     private AdminRepository adminRepository;
     @Autowired
     private SpecialtyRepository specialtyRepository;
+    @Autowired
+    private MedicalServiceRepository medicalServiceRepository;
+    @Autowired
+    private MedicalFacilityRepository medicalFacilityRepository;
+    @Autowired
+    private FacilityServiceRepository facilityServiceRepository;
     public boolean checkAccountAdmin(@AuthenticationPrincipal UserDetails user){
         return adminRepository.existsByEmail(user.getUsername());
     }
@@ -57,7 +63,7 @@ public class admin_controller {
     public ResponseEntity<?>createDoctor(@RequestBody DoctorSpecialtyRequest doctorSpecialtyRequest,@AuthenticationPrincipal UserDetails user)
     {
         if(!checkAccountAdmin(user))throw new DataException("Khong tim thay tai khoan "+user.getUsername()+" trong he thong");
-        if(doctorSpecialtyRequest.getSpecialtyIds()==null)throw new IllegalArgumentException("Vui long chon it nhat mot chuyen khoa");
+        if(doctorSpecialtyRequest.getSpecialtyIds()==null||doctorSpecialtyRequest.getSpecialtyIds().size()<=0)throw new IllegalArgumentException("Vui long chon it nhat mot chuyen khoa");
         Doctor doctor = new Doctor();
         doctor.setEmail(doctorSpecialtyRequest.getEmail());
         doctor.setPassword(doctorSpecialtyRequest.getPassword());
@@ -107,7 +113,7 @@ public class admin_controller {
         response.put("message",message);
         return new ResponseEntity<>(response, HttpStatus.OK);
     }
-    @PostMapping("createDichvuKham")
+    @PostMapping("/createDichvuKham")
     public ResponseEntity<?>CreateDichvuKham(@RequestBody MedicalServiceRequest medicalServiceRequest,@AuthenticationPrincipal UserDetails user)
     {
         if(!checkAccountAdmin(user))throw new DataException("Khong tim thay tai khoan "+user.getUsername()+" trong he thong");
@@ -121,5 +127,64 @@ public class admin_controller {
         response.put("message","Them dich vu kham thanh cong");
         return new ResponseEntity<>(response, HttpStatus.OK);
     }
-
+    @PostMapping("/createCoSoYTe")
+    public ResponseEntity<?>createCoSoYTe(@RequestBody FacilityServiceRequest facilityServiceRequest, @AuthenticationPrincipal UserDetails user)
+    {
+        if(!checkAccountAdmin(user))throw new DataException("Khong tim thay tai khoan "+user.getUsername()+" trong he thong");
+        if(facilityServiceRequest.getServiceIds()==null||facilityServiceRequest.getServiceIds().size()<=0)throw new IllegalArgumentException("Vui long chon it nhat 1 loai dich vu kham");
+        MedicalFacility  medicalFacility=new MedicalFacility();
+        medicalFacility.setName(facilityServiceRequest.getName());
+        medicalFacility.setAddress(facilityServiceRequest.getAddress());
+        medicalFacility.setPhone(facilityServiceRequest.getPhone());
+        medicalFacility.setEmail(facilityServiceRequest.getEmail());
+        medicalFacility.setDescription(facilityServiceRequest.getDescription());
+        MedicalFacility medicalFacilitySave=admin_service.createMedicalFacility(medicalFacility);
+        if(medicalFacilitySave!=null)
+        {
+            for(Long serviceId: facilityServiceRequest.getServiceIds())
+            {
+                FacilityService facilityService=new FacilityService();
+                facilityService.setService(medicalServiceRepository.findById(serviceId).get());
+                facilityService.setFacility(medicalFacilitySave);
+                facilityService.setCost("0");
+                admin_service.createFacilityService(facilityService);
+            }
+        }
+        Map<String,Object> response = new HashMap<>();
+        response.put("message","Them co so y te thanh cong : ");
+        response.put("name",medicalFacilitySave.getName());
+        response.put("description",medicalFacilitySave.getDescription());
+        response.put("mail",medicalFacilitySave.getEmail());
+        response.put("phone",medicalFacilitySave.getPhone());
+        response.put("address",medicalFacilitySave.getAddress());
+        response.put("Danh sach dich vu kham ",facilityServiceRequest.getServiceIds().stream()
+                .map(id -> medicalServiceRepository.findById(id).map(MedicalService::getServiceName).orElse("Unknown"))
+                .collect(Collectors.joining(", ")));
+        return new ResponseEntity<>(response, HttpStatus.OK);
+    }
+    @GetMapping("/showDichVuCuaCSYT/{facilityId}")
+    public ResponseEntity<?>showDichVuCuaCSYT(@PathVariable Long facilityId,@AuthenticationPrincipal UserDetails user){
+        if(!checkAccountAdmin(user))throw new DataException("Khong tim thay tai khoan "+user.getUsername()+" trong he thong");
+        List<MedicalService>medicalServiceList=admin_service.getlistdichvu(facilityId);
+        Map<String, Object> response = new HashMap<>();
+        response.put("message", "Danh sách dich vu kham benh co so : "+medicalFacilityRepository.findById(facilityId).get().getName());
+        response.put("dich vu : ",medicalServiceList.stream().map(Service->
+        {
+            Map<String,Object> serviceInfo = new HashMap<>();
+            serviceInfo.put("serviceName",Service.getServiceName());
+            serviceInfo.put("description",Service.getDescription());
+            serviceInfo.put("gia",facilityServiceRepository.findByFacilityAndService(medicalFacilityRepository.findById(facilityId).get(),medicalServiceRepository.findById(Service.getServiceId()).get()).getCost());
+            return serviceInfo;
+        }));
+        return new ResponseEntity<>(response, HttpStatus.OK);
+    }
+    @PutMapping("/updateGiaDV/{id}")
+    public ResponseEntity<?> updateGiaDV(@PathVariable Long id,@AuthenticationPrincipal UserDetails user,@RequestBody FacilityServiceRequest facilityServiceRequest)
+    {
+        if(!checkAccountAdmin(user))throw new DataException("Khong tim thay tai khoan "+user.getUsername()+" trong he thong");
+        FacilityService facilityService=admin_service.updateGiaDichVu(id,facilityServiceRequest.getGia());
+        Map<String,Object> response = new HashMap<>();
+        response.put("message","Update thanh cong gia dich vu "+medicalServiceRepository.findById(facilityService.getService().getServiceId()).get().getServiceName()+" co so "+medicalFacilityRepository.findById(facilityService.getFacility().getFacilityId()).get().getName());
+        return  new ResponseEntity<>(response, HttpStatus.OK);
+    }
 }

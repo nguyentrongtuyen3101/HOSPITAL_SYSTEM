@@ -9,6 +9,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.regex.Pattern;
 
 @Service
@@ -27,6 +29,10 @@ public class admin_service_imp implements admin_service{
     private PasswordEncoder passwordEncoder;
     @Autowired
     private MedicalServiceRepository medicalServiceRepository;
+    @Autowired
+    private MedicalFacilityRepository medicalFacilityRepository;
+    @Autowired
+    private FacilityServiceRepository facilityServiceRepository;
     private static final Pattern EMAIL_PATTERN = Pattern.compile("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$");
     private static final Pattern PHONE_PATTERN = Pattern.compile("^(0|\\+84)(\\d{9})$");
     private static final Pattern PASSWORD_PATTERN = Pattern.compile("^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[^A-Za-z0-9]).{8,}$");
@@ -121,5 +127,44 @@ public class admin_service_imp implements admin_service{
         if(medicalService.getServiceName()==null||medicalService.getServiceName().trim().isEmpty())throw new IllegalArgumentException("Khong dc de chong ten dich vu");
         if(medicalServiceRepository.existsByServiceName(medicalService.getServiceName().trim()))throw new DataException("Dich vu "+medicalService.getServiceName()+" da co trong he thong");
         return medicalServiceRepository.save(medicalService);
+    }
+    @Override
+    @Transactional
+    public MedicalFacility createMedicalFacility(MedicalFacility medicalFacility)
+    {
+        if(medicalFacility.getName()==null||medicalFacility.getName().trim().isEmpty())throw new IllegalArgumentException("Khong dc de chong ten so so");
+        if(medicalFacility.getAddress()==null||medicalFacility.getAddress().trim().isEmpty())throw new IllegalArgumentException("Khong dc de chong dia chi");
+        if(medicalFacility.getEmail()==null||medicalFacility.getEmail().trim().isEmpty())throw new IllegalArgumentException("Khong dc de chong gmail");
+        if(medicalFacility.getPhone()==null||medicalFacility.getPhone().trim().isEmpty())throw new IllegalArgumentException("Khong dc de chong phone");
+        if(medicalFacilityRepository.existsByName(medicalFacility.getName().trim()))throw new DataException("Da ton tai co so y te nay trong he thong");
+        if(medicalFacilityRepository.existsByAddress(medicalFacility.getAddress()))throw new DataException("Da ton tai dia chi nay");
+        return medicalFacilityRepository.save(medicalFacility);
+    }
+    @Override
+    @Transactional
+    public FacilityService createFacilityService(FacilityService facilityService)
+    {
+        return facilityServiceRepository.save(facilityService);
+    }
+    @Override
+    @Transactional
+    public List<MedicalService> getlistdichvu(Long id)
+    {
+        List<FacilityService> facilityServices=facilityServiceRepository.findFacilityServicesByFacility(medicalFacilityRepository.findById(id).get());
+        List<MedicalService> medicalServices=new ArrayList<MedicalService>();
+        for(FacilityService facilityService:facilityServices)
+        {
+            medicalServices.add(medicalServiceRepository.findById(facilityService.getService().getServiceId()).get());
+        }
+        return medicalServices;
+    }
+    @Override
+    @Transactional
+    public FacilityService updateGiaDichVu(Long id,String gia)
+    {
+        if((Float.parseFloat(gia)<0))throw  new IllegalArgumentException("Khong dc nhap gia dich vu be hon 0");
+        FacilityService facilityService=facilityServiceRepository.findById(id).get();
+        facilityService.setCost(gia);
+        return facilityServiceRepository.save(facilityService);
     }
 }
