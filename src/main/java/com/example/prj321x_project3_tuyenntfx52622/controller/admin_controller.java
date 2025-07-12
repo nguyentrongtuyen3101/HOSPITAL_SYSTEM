@@ -64,6 +64,7 @@ public class admin_controller {
     {
         if(!checkAccountAdmin(user))throw new DataException("Khong tim thay tai khoan "+user.getUsername()+" trong he thong");
         if(doctorSpecialtyRequest.getSpecialtyIds()==null||doctorSpecialtyRequest.getSpecialtyIds().size()<=0)throw new IllegalArgumentException("Vui long chon it nhat mot chuyen khoa");
+        if(doctorSpecialtyRequest.getMedicalFacilityId()==null||doctorSpecialtyRequest.getMedicalFacilityId().describeConstable().isEmpty())throw new IllegalArgumentException("Vui long chon 1 co so y te");
         Doctor doctor = new Doctor();
         doctor.setEmail(doctorSpecialtyRequest.getEmail());
         doctor.setPassword(doctorSpecialtyRequest.getPassword());
@@ -74,6 +75,7 @@ public class admin_controller {
         doctor.setAchievements(doctorSpecialtyRequest.getAchievements());
         doctor.setEducation( doctorSpecialtyRequest.getEducation());
         doctor.setIntroduction(doctorSpecialtyRequest.getIntroduction());
+        doctor.setMedicalFacility(medicalFacilityRepository.findById(doctorSpecialtyRequest.getMedicalFacilityId()).get());
         Doctor doctorsave=admin_service.createdDoctor(doctor);
         if(doctorsave != null)
         {
@@ -94,6 +96,7 @@ public class admin_controller {
         response.put("achievements",doctorsave.getAchievements());
         response.put("education",doctorsave.getEducation());
         response.put("introduction",doctorsave.getIntroduction());
+        response.put("co so",medicalFacilityRepository.findById(doctorSpecialtyRequest.getMedicalFacilityId()).get().getName());
         response.put("specialties", doctorSpecialtyRequest.getSpecialtyIds().stream()
                 .map(id -> specialtyRepository.findById(id).map(Specialty::getName).orElse("Unknown"))
                 .collect(Collectors.joining(", ")));

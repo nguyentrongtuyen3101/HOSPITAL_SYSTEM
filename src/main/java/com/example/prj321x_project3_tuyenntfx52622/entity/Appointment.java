@@ -29,6 +29,9 @@ public class Appointment {
     @JoinColumn(name = "facility_id", nullable = false)
     private MedicalFacility facility;
 
+    @ManyToOne
+    @JoinColumn(name = "service_id", nullable = false)
+    private MedicalService medicalService;
     @Column(nullable = false)
     private LocalDateTime appointmentDate;
 

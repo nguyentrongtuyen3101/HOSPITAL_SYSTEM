@@ -52,6 +52,9 @@ public class Doctor {
     @OneToMany(mappedBy = "doctor", cascade = CascadeType.ALL)
     private List<DoctorSpecialty> specialties;
 
+    @ManyToOne
+    @JoinColumn(name = "facility_id", nullable = false)
+    private MedicalFacility medicalFacility;
     public enum Gender {
         MALE, FEMALE, OTHER
     }

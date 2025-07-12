@@ -17,7 +17,6 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 @EnableWebSecurity
 @EnableMethodSecurity
 public class SecurityConfig {
-
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
@@ -25,16 +24,15 @@ public class SecurityConfig {
                         authorizeRequests
                                 .requestMatchers("/account/createUser", "/account/dangnhap","account/forgotPassword","account/resetpassword").permitAll() // Cho phép truy cập không cần xác thực
                                 .requestMatchers("/admin/**").hasRole("ADMIN")
+                                .requestMatchers("/user/**").hasRole("USER")
                                 .anyRequest().authenticated() // Các endpoint khác yêu cầu xác thực
                 )
                 .csrf(csrf -> csrf.disable()) // Tắt CSRF (deprecated, cần cải thiện sau)
                 .securityContext(securityContext -> securityContext.requireExplicitSave(false)) // Tắt quản lý session
                 .sessionManagement(sessionManagement -> sessionManagement.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .addFilterBefore(jwtFilter(), UsernamePasswordAuthenticationFilter.class); // Thêm JwtFilter
-
         return http.build();
     }
-
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
@@ -43,7 +41,6 @@ public class SecurityConfig {
     public AuthenticationManager authenticationManager(AuthenticationConfiguration authenticationConfiguration) throws Exception {
         return authenticationConfiguration.getAuthenticationManager();
     }
-
     @Bean
     public JwtFilter jwtFilter() {
         return new JwtFilter();
