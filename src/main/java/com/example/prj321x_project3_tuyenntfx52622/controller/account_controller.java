@@ -21,7 +21,7 @@ import java.util.Random;
 
 @RestController
 @RequestMapping("/account")
-public class account_controller {
+public class Account_controller {
     @Autowired
     private account_service account_service;
     @Autowired

@@ -1,7 +1,5 @@
 package com.example.prj321x_project3_tuyenntfx52622.DTO;
 import com.example.prj321x_project3_tuyenntfx52622.entity.Doctor;
-import com.example.prj321x_project3_tuyenntfx52622.entity.MedicalFacility;
-import com.example.prj321x_project3_tuyenntfx52622.entity.Specialty;
 import lombok.Data;
 
 import java.util.List;

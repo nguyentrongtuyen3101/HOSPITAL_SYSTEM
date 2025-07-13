@@ -22,9 +22,10 @@ public class SecurityConfig {
         http
                 .authorizeHttpRequests(authorizeRequests ->
                         authorizeRequests
-                                .requestMatchers("/account/createUser", "/account/dangnhap","account/forgotPassword","account/resetpassword").permitAll() // Cho phép truy cập không cần xác thực
+                                .requestMatchers("/account/createUser", "/account/dangnhap","account/forgotPassword","account/resetpassword","user/showCoSoYTe","user/showCoSoYTeP2").permitAll() // Cho phép truy cập không cần xác thực
                                 .requestMatchers("/admin/**").hasRole("ADMIN")
                                 .requestMatchers("/user/**").hasRole("USER")
+                                .requestMatchers("/doctor/**").hasRole("DOCTOR")
                                 .anyRequest().authenticated() // Các endpoint khác yêu cầu xác thực
                 )
                 .csrf(csrf -> csrf.disable()) // Tắt CSRF (deprecated, cần cải thiện sau)

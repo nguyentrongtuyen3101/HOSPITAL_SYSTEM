@@ -39,7 +39,7 @@ public class Appointment {
     private Status status = Status.PENDING;
 
     private String reason;
-
+    private String cancelReason;
     private LocalDateTime createdAt = LocalDateTime.now();
 
     public enum Status {

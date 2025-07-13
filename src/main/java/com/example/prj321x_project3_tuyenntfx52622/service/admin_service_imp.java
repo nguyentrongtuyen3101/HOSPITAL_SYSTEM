@@ -1,10 +1,10 @@
 package com.example.prj321x_project3_tuyenntfx52622.service;
 
+import com.example.prj321x_project3_tuyenntfx52622.DTO.DoctorSpecialtyRequest;
 import com.example.prj321x_project3_tuyenntfx52622.entity.*;
 import com.example.prj321x_project3_tuyenntfx52622.repository.*;
 import com.example.prj321x_project3_tuyenntfx52622.rest.DataException;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.dao.DataAccessException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -33,6 +33,9 @@ public class admin_service_imp implements admin_service{
     private MedicalFacilityRepository medicalFacilityRepository;
     @Autowired
     private FacilityServiceRepository facilityServiceRepository;
+    @Autowired
+    private FacilitySpecialtyRepository facilitySpecialtyRepository;
+
     private static final Pattern EMAIL_PATTERN = Pattern.compile("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$");
     private static final Pattern PHONE_PATTERN = Pattern.compile("^(0|\\+84)(\\d{9})$");
     private static final Pattern PASSWORD_PATTERN = Pattern.compile("^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[^A-Za-z0-9]).{8,}$");
@@ -46,8 +49,19 @@ public class admin_service_imp implements admin_service{
     }
     @Override
     @Transactional
-    public Doctor createdDoctor(Doctor doctor)
+    public Doctor createdDoctor(DoctorSpecialtyRequest doctorSpecialtyRequest)
     {
+        Doctor doctor = new Doctor();
+        doctor.setEmail(doctorSpecialtyRequest.getEmail());
+        doctor.setPassword(doctorSpecialtyRequest.getPassword());
+        doctor.setFullName(doctorSpecialtyRequest.getFullName());
+        doctor.setAddress(doctorSpecialtyRequest.getAddress());
+        doctor.setPhone(doctorSpecialtyRequest.getPhone());
+        doctor.setGender(doctorSpecialtyRequest.getGender());
+        doctor.setAchievements(doctorSpecialtyRequest.getAchievements());
+        doctor.setEducation( doctorSpecialtyRequest.getEducation());
+        doctor.setIntroduction(doctorSpecialtyRequest.getIntroduction());
+        doctor.setMedicalFacility(medicalFacilityRepository.findById(doctorSpecialtyRequest.getMedicalFacilityId()).get());
         if(doctor.getFullName()==null||doctor.getFullName().trim().isEmpty()){
             throw new IllegalArgumentException("Ten ko dc de chong");
         }
@@ -71,6 +85,9 @@ public class admin_service_imp implements admin_service{
         if(userRepository.existsUsersByEmail(doctor.getEmail())||adminRepository.existsByEmail(doctor.getEmail())||doctorRepository.existsByEmail(doctor.getEmail()))
         {
             throw new DataException("Gmail "+doctor.getEmail().toString()+" da dc dang ky");
+        }
+        for (Long SpecialtyId:doctorSpecialtyRequest.getSpecialtyIds()) {
+            if(!facilitySpecialtyRepository.existsByFacilityAndSpecialty(medicalFacilityRepository.findById(doctorSpecialtyRequest.getMedicalFacilityId()).get(),specialtyRepository.findById(SpecialtyId).get()))throw new DataException("co so y te chua co chuyen khoa "+specialtyRepository.findById(SpecialtyId).get().getName());
         }
         String encodedPassword = passwordEncoder.encode(doctor.getPassword());
         doctor.setPassword(encodedPassword);
@@ -145,6 +162,12 @@ public class admin_service_imp implements admin_service{
     public FacilityService createFacilityService(FacilityService facilityService)
     {
         return facilityServiceRepository.save(facilityService);
+    }
+    @Override
+    @Transactional
+    public FacilitySpecialty createFacilitySpacialty(FacilitySpecialty facilitySpacialty)
+    {
+        return facilitySpecialtyRepository.save(facilitySpacialty);
     }
     @Override
     @Transactional

@@ -10,7 +10,6 @@ import com.example.prj321x_project3_tuyenntfx52622.rest.DataException;
 import com.example.prj321x_project3_tuyenntfx52622.service.account_service;
 import com.example.prj321x_project3_tuyenntfx52622.service.admin_service;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.dao.DataAccessException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -18,7 +17,6 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -27,7 +25,7 @@ import java.util.stream.Collectors;
 @RestController
 @RequestMapping("/admin")
 @PreAuthorize("hasRole('ADMIN')")
-public class admin_controller {
+public class Admin_controller {
     @Autowired
     private admin_service admin_service;
     @Autowired
@@ -42,6 +40,8 @@ public class admin_controller {
     private MedicalFacilityRepository medicalFacilityRepository;
     @Autowired
     private FacilityServiceRepository facilityServiceRepository;
+    @Autowired
+    private FacilitySpecialtyRepository facilitySpecialtyRepository;
     public boolean checkAccountAdmin(@AuthenticationPrincipal UserDetails user){
         return adminRepository.existsByEmail(user.getUsername());
     }
@@ -65,18 +65,7 @@ public class admin_controller {
         if(!checkAccountAdmin(user))throw new DataException("Khong tim thay tai khoan "+user.getUsername()+" trong he thong");
         if(doctorSpecialtyRequest.getSpecialtyIds()==null||doctorSpecialtyRequest.getSpecialtyIds().size()<=0)throw new IllegalArgumentException("Vui long chon it nhat mot chuyen khoa");
         if(doctorSpecialtyRequest.getMedicalFacilityId()==null||doctorSpecialtyRequest.getMedicalFacilityId().describeConstable().isEmpty())throw new IllegalArgumentException("Vui long chon 1 co so y te");
-        Doctor doctor = new Doctor();
-        doctor.setEmail(doctorSpecialtyRequest.getEmail());
-        doctor.setPassword(doctorSpecialtyRequest.getPassword());
-        doctor.setFullName(doctorSpecialtyRequest.getFullName());
-        doctor.setAddress(doctorSpecialtyRequest.getAddress());
-        doctor.setPhone(doctorSpecialtyRequest.getPhone());
-        doctor.setGender(doctorSpecialtyRequest.getGender());
-        doctor.setAchievements(doctorSpecialtyRequest.getAchievements());
-        doctor.setEducation( doctorSpecialtyRequest.getEducation());
-        doctor.setIntroduction(doctorSpecialtyRequest.getIntroduction());
-        doctor.setMedicalFacility(medicalFacilityRepository.findById(doctorSpecialtyRequest.getMedicalFacilityId()).get());
-        Doctor doctorsave=admin_service.createdDoctor(doctor);
+        Doctor doctorsave=admin_service.createdDoctor(doctorSpecialtyRequest);
         if(doctorsave != null)
         {
             for(Long specialtyId: doctorSpecialtyRequest.getSpecialtyIds()) {
@@ -134,7 +123,8 @@ public class admin_controller {
     public ResponseEntity<?>createCoSoYTe(@RequestBody FacilityServiceRequest facilityServiceRequest, @AuthenticationPrincipal UserDetails user)
     {
         if(!checkAccountAdmin(user))throw new DataException("Khong tim thay tai khoan "+user.getUsername()+" trong he thong");
-        if(facilityServiceRequest.getServiceIds()==null||facilityServiceRequest.getServiceIds().size()<=0)throw new IllegalArgumentException("Vui long chon it nhat 1 loai dich vu kham");
+        if(facilityServiceRequest.getServiceIds()==null||facilityServiceRequest.getServiceIds().size()<=0)throw new IllegalArgumentException("Vui long chon it nhat mot loai dich vu kham");
+        if(facilityServiceRequest.getFacilityIds()==null||facilityServiceRequest.getFacilityIds().size()<=0)throw new IllegalArgumentException("Vui long chon it nhat 1 chuyen khoa");
         MedicalFacility  medicalFacility=new MedicalFacility();
         medicalFacility.setName(facilityServiceRequest.getName());
         medicalFacility.setAddress(facilityServiceRequest.getAddress());
@@ -152,9 +142,16 @@ public class admin_controller {
                 facilityService.setCost("0");
                 admin_service.createFacilityService(facilityService);
             }
+            for (Long SpecialtyId:facilityServiceRequest.getFacilityIds())
+            {
+                FacilitySpecialty facilitySpacialty=new FacilitySpecialty();
+                facilitySpacialty.setFacility(medicalFacilitySave);
+                facilitySpacialty.setSpecialty(specialtyRepository.findById(SpecialtyId).get());
+                admin_service.createFacilitySpacialty(facilitySpacialty);
+            }
         }
         Map<String,Object> response = new HashMap<>();
-        response.put("message","Them co so y te thanh cong : ");
+        response.put("message","Them co so y te thanh cong");
         response.put("name",medicalFacilitySave.getName());
         response.put("description",medicalFacilitySave.getDescription());
         response.put("mail",medicalFacilitySave.getEmail());
@@ -162,6 +159,9 @@ public class admin_controller {
         response.put("address",medicalFacilitySave.getAddress());
         response.put("Danh sach dich vu kham ",facilityServiceRequest.getServiceIds().stream()
                 .map(id -> medicalServiceRepository.findById(id).map(MedicalService::getServiceName).orElse("Unknown"))
+                .collect(Collectors.joining(", ")));
+        response.put("chuyen khoa",facilityServiceRequest.getFacilityIds().stream()
+                .map(id->specialtyRepository.findById(id).map(Specialty::getName).orElse("Unknown"))
                 .collect(Collectors.joining(", ")));
         return new ResponseEntity<>(response, HttpStatus.OK);
     }
@@ -181,13 +181,14 @@ public class admin_controller {
         }));
         return new ResponseEntity<>(response, HttpStatus.OK);
     }
-    @PutMapping("/updateGiaDV/{id}")
-    public ResponseEntity<?> updateGiaDV(@PathVariable Long id,@AuthenticationPrincipal UserDetails user,@RequestBody FacilityServiceRequest facilityServiceRequest)
+    @PutMapping("/updateGiaDV")
+    public ResponseEntity<?> updateGiaDV(@AuthenticationPrincipal UserDetails user,@RequestBody FacilityServiceRequest facilityServiceRequest)
     {
         if(!checkAccountAdmin(user))throw new DataException("Khong tim thay tai khoan "+user.getUsername()+" trong he thong");
-        FacilityService facilityService=admin_service.updateGiaDichVu(id,facilityServiceRequest.getGia());
+        FacilityService facilityService=admin_service.updateGiaDichVu(facilityServiceRequest.getId(),facilityServiceRequest.getGia());
         Map<String,Object> response = new HashMap<>();
         response.put("message","Update thanh cong gia dich vu "+medicalServiceRepository.findById(facilityService.getService().getServiceId()).get().getServiceName()+" co so "+medicalFacilityRepository.findById(facilityService.getFacility().getFacilityId()).get().getName());
         return  new ResponseEntity<>(response, HttpStatus.OK);
     }
+
 }
