@@ -1,20 +1,27 @@
 package com.example.prj321x_project3_tuyenntfx52622.controller;
 
 import com.example.prj321x_project3_tuyenntfx52622.DTO.AppointmentRequest;
+import com.example.prj321x_project3_tuyenntfx52622.DTO.MedicalRecordRequest;
 import com.example.prj321x_project3_tuyenntfx52622.entity.Appointment;
 import com.example.prj321x_project3_tuyenntfx52622.entity.Doctor;
+import com.example.prj321x_project3_tuyenntfx52622.entity.MedicalRecord;
 import com.example.prj321x_project3_tuyenntfx52622.repository.AppointmentRepository;
 import com.example.prj321x_project3_tuyenntfx52622.repository.DoctorRepository;
 import com.example.prj321x_project3_tuyenntfx52622.rest.DataException;
 import com.example.prj321x_project3_tuyenntfx52622.service.Doctor_service;
 import com.example.prj321x_project3_tuyenntfx52622.service.UserFunction_service;
+import jakarta.mail.internet.MimeMessage;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.mail.SimpleMailMessage;
+import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -34,7 +41,8 @@ public class Doctor_controller {
     private AppointmentRepository appointmentRepository;
     @Autowired
     private UserFunction_service userFunction_service;
-
+    @Autowired
+    private JavaMailSender mailSender;
     public boolean checkAccountDoctor(@AuthenticationPrincipal UserDetails user){
         return doctorRepository.existsByEmail(user.getUsername());
     }
@@ -61,5 +69,21 @@ public class Doctor_controller {
         if(!checkAccountDoctor(user))throw new DataException("Khong tìm thay tai khoan bac sy voi gmail "+user.getUsername());
         userFunction_service.cancelAppoitment(id,appointmentRequest.getCancelReason(),user.getUsername());
         return new ResponseEntity<>(HttpStatus.OK);
+    }
+    // chức năng nâng cao
+    @PostMapping("/GuiVaCapNhatKQ")
+    public ResponseEntity<?> GuiVaCapNhatKQ(@AuthenticationPrincipal UserDetails user,@RequestBody MedicalRecordRequest medicalRecordRequest) {
+        if (!checkAccountDoctor(user))throw new DataException("Khong tìm thay tai khoan bac sy voi gmail " + user.getUsername());
+        medicalRecordRequest.setDoctorId(doctorRepository.findByEmail(user.getUsername()).getDoctorId());
+        MedicalRecord medicalRecord = doctorService.createMedicalRecord(medicalRecordRequest);
+        if (medicalRecord != null) {
+            doctorService.COMPLETEDAppoitment(medicalRecord.getAppointment().getAppointmentId(), user.getUsername());
+        }
+        Map<String, Object> response = new HashMap<>();
+        response.put("ma ket qua", medicalRecord.getRecordId());
+        response.put("ho ten bac sy", medicalRecord.getDoctor().getFullName());
+        response.put("ma lich kham", medicalRecord.getAppointment().getAppointmentId());
+        response.put("message","Ket qua da dc gui den gmail cua benh nhan");
+        return new ResponseEntity<>(response, HttpStatus.OK);
     }
 }

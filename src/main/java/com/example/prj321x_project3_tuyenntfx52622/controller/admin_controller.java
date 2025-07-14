@@ -17,6 +17,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -29,7 +30,7 @@ public class Admin_controller {
     @Autowired
     private admin_service admin_service;
     @Autowired
-    private account_service account_service;
+    private DoctorRepository doctor_repository;
     @Autowired
     private AdminRepository adminRepository;
     @Autowired
@@ -41,7 +42,9 @@ public class Admin_controller {
     @Autowired
     private FacilityServiceRepository facilityServiceRepository;
     @Autowired
-    private FacilitySpecialtyRepository facilitySpecialtyRepository;
+    private UserRepository userRepository;
+    @Autowired
+    private AppointmentRepository appointmentRepository;
     public boolean checkAccountAdmin(@AuthenticationPrincipal UserDetails user){
         return adminRepository.existsByEmail(user.getUsername());
     }
@@ -190,5 +193,40 @@ public class Admin_controller {
         response.put("message","Update thanh cong gia dich vu "+medicalServiceRepository.findById(facilityService.getService().getServiceId()).get().getServiceName()+" co so "+medicalFacilityRepository.findById(facilityService.getFacility().getFacilityId()).get().getName());
         return  new ResponseEntity<>(response, HttpStatus.OK);
     }
-
+    @GetMapping("/getLichKham/{idUser}")
+    public ResponseEntity<?> getLichKham(@PathVariable Long idUser,@AuthenticationPrincipal UserDetails user){
+        if(!checkAccountAdmin(user))throw new DataException("Khong tim thay tai khoan "+user.getUsername()+" trong he thong");
+        List<Appointment>appointmentList=appointmentRepository.findAllByUser(userRepository.findById(idUser).get());
+        List<Map<String,Object>> response=appointmentList.stream().map(appointment -> {
+            Map<String,Object> appointmentInfo = new HashMap<>();
+            appointmentInfo.put("ma lich kham",appointment.getAppointmentId());
+            appointmentInfo.put("ho ten benh nhan",appointment.getUser().getFullName());
+            appointmentInfo.put("ho ten bac sy",appointment.getDoctor().getFullName());
+            appointmentInfo.put("co so y te",appointment.getFacility().getName());
+            appointmentInfo.put("ten dich vu",appointment.getMedicalService().getServiceName());
+            appointmentInfo.put("ngay kham",appointment.getAppointmentDate());
+            appointmentInfo.put("trieu chung",appointment.getReason());
+            appointmentInfo.put("trang thai",appointment.getStatus());
+            return appointmentInfo;
+        }).collect(Collectors.toList());
+        return new ResponseEntity<>(response, HttpStatus.OK);
+    }
+    @GetMapping("/getLichKhamBacSy/{idDoctor}")
+    public ResponseEntity<?> getLichKhamBácy(@PathVariable Long idDoctor,@AuthenticationPrincipal UserDetails user){
+        if(!checkAccountAdmin(user))throw new DataException("Khong tim thay tai khoan "+user.getUsername()+" trong he thong");
+        List<Appointment>appointmentList=appointmentRepository.findAllByDoctor(doctor_repository.findById(idDoctor).get());
+        List<Map<String,Object>> response=appointmentList.stream().map(appointment -> {
+            Map<String,Object> appointmentInfo = new HashMap<>();
+            appointmentInfo.put("ma lich kham",appointment.getAppointmentId());
+            appointmentInfo.put("ho ten benh nhan",appointment.getUser().getFullName());
+            appointmentInfo.put("ho ten bac sy",appointment.getDoctor().getFullName());
+            appointmentInfo.put("co so y te",appointment.getFacility().getName());
+            appointmentInfo.put("ten dich vu",appointment.getMedicalService().getServiceName());
+            appointmentInfo.put("ngay kham",appointment.getAppointmentDate());
+            appointmentInfo.put("trieu chung",appointment.getReason());
+            appointmentInfo.put("trang thai",appointment.getStatus());
+            return appointmentInfo;
+        }).collect(Collectors.toList());
+        return new ResponseEntity<>(response, HttpStatus.OK);
+    }
 }
