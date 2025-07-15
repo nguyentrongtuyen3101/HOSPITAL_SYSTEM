@@ -127,7 +127,7 @@ public class Admin_controller {
     {
         if(!checkAccountAdmin(user))throw new DataException("Khong tim thay tai khoan "+user.getUsername()+" trong he thong");
         if(facilityServiceRequest.getServiceIds()==null||facilityServiceRequest.getServiceIds().size()<=0)throw new IllegalArgumentException("Vui long chon it nhat mot loai dich vu kham");
-        if(facilityServiceRequest.getFacilityIds()==null||facilityServiceRequest.getFacilityIds().size()<=0)throw new IllegalArgumentException("Vui long chon it nhat 1 chuyen khoa");
+        if(facilityServiceRequest.getSpecialtyIds()==null||facilityServiceRequest.getSpecialtyIds().size()<=0)throw new IllegalArgumentException("Vui long chon it nhat 1 chuyen khoa");
         MedicalFacility  medicalFacility=new MedicalFacility();
         medicalFacility.setName(facilityServiceRequest.getName());
         medicalFacility.setAddress(facilityServiceRequest.getAddress());
@@ -145,7 +145,7 @@ public class Admin_controller {
                 facilityService.setCost("0");
                 admin_service.createFacilityService(facilityService);
             }
-            for (Long SpecialtyId:facilityServiceRequest.getFacilityIds())
+            for (Long SpecialtyId:facilityServiceRequest.getSpecialtyIds())
             {
                 FacilitySpecialty facilitySpacialty=new FacilitySpecialty();
                 facilitySpacialty.setFacility(medicalFacilitySave);
@@ -163,7 +163,7 @@ public class Admin_controller {
         response.put("Danh sach dich vu kham ",facilityServiceRequest.getServiceIds().stream()
                 .map(id -> medicalServiceRepository.findById(id).map(MedicalService::getServiceName).orElse("Unknown"))
                 .collect(Collectors.joining(", ")));
-        response.put("chuyen khoa",facilityServiceRequest.getFacilityIds().stream()
+        response.put("chuyen khoa",facilityServiceRequest.getSpecialtyIds().stream()
                 .map(id->specialtyRepository.findById(id).map(Specialty::getName).orElse("Unknown"))
                 .collect(Collectors.joining(", ")));
         return new ResponseEntity<>(response, HttpStatus.OK);

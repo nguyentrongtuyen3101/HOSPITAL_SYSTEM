@@ -21,7 +21,7 @@ public class Specialty {
     private String name;
 
     private String description;
-
+    private int searchnumber=0;
     @OneToMany(mappedBy = "specialty", cascade = CascadeType.ALL)
     private List<DoctorSpecialty> doctors;
 }

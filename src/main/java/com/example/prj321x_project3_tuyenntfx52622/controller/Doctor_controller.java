@@ -5,11 +5,15 @@ import com.example.prj321x_project3_tuyenntfx52622.DTO.MedicalRecordRequest;
 import com.example.prj321x_project3_tuyenntfx52622.entity.Appointment;
 import com.example.prj321x_project3_tuyenntfx52622.entity.Doctor;
 import com.example.prj321x_project3_tuyenntfx52622.entity.MedicalRecord;
+import com.example.prj321x_project3_tuyenntfx52622.entity.User;
 import com.example.prj321x_project3_tuyenntfx52622.repository.AppointmentRepository;
 import com.example.prj321x_project3_tuyenntfx52622.repository.DoctorRepository;
+import com.example.prj321x_project3_tuyenntfx52622.repository.UserRepository;
 import com.example.prj321x_project3_tuyenntfx52622.rest.DataException;
 import com.example.prj321x_project3_tuyenntfx52622.service.Doctor_service;
 import com.example.prj321x_project3_tuyenntfx52622.service.UserFunction_service;
+import com.itextpdf.kernel.pdf.PdfDocument;
+import com.itextpdf.kernel.pdf.PdfWriter;
 import jakarta.mail.internet.MimeMessage;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -22,11 +26,10 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import org.w3c.dom.Document;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.io.ByteArrayOutputStream;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @RestController
@@ -38,7 +41,7 @@ public class Doctor_controller {
     @Autowired
     private DoctorRepository doctorRepository;
     @Autowired
-    private AppointmentRepository appointmentRepository;
+    private UserRepository  userRepository;
     @Autowired
     private UserFunction_service userFunction_service;
     @Autowired
@@ -85,5 +88,41 @@ public class Doctor_controller {
         response.put("ma lich kham", medicalRecord.getAppointment().getAppointmentId());
         response.put("message","Ket qua da dc gui den gmail cua benh nhan");
         return new ResponseEntity<>(response, HttpStatus.OK);
+    }
+    @PostMapping(value = "/guiKQ/{userId}", consumes = "multipart/form-data")
+    public ResponseEntity<?> guikq(@AuthenticationPrincipal UserDetails user, @PathVariable Long userId, @RequestParam("pdfFile") MultipartFile pdfFile) {
+        try {
+            if (!checkAccountDoctor(user)) {
+                throw new DataException("Khong tim thay tai khoan bac sy voi gmail " + user.getUsername());
+            }
+            User patient = userRepository.findById(userId).orElseThrow(() -> new DataException("Khong tim thay benh nhan voi ID " + userId));
+
+            // Kiểm tra file PDF
+            if (pdfFile == null || pdfFile.isEmpty()) {
+                throw new DataException("File PDF không được để trống");
+            }
+            if (!pdfFile.getContentType().equals("application/pdf")) {
+                throw new DataException("File phải là định dạng PDF");
+            }
+
+            // Tạo email với file PDF đính kèm
+            MimeMessage message = mailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(message, true);
+            helper.setTo(patient.getEmail());
+            helper.setSubject("KẾT QUẢ BỆNH ÁN CỦA BỆNH NHÂN " + patient.getFullName());
+            helper.setText("Kính gửi " + patient.getFullName() + ",\n\n" +
+                    "Đính kèm là file PDF chứa kết quả bệnh án của bạn. Vui lòng kiểm tra.\n" +
+                    "Trân trọng,\nBác sĩ " + doctorRepository.findByEmail(user.getUsername()).getFullName());
+            helper.addAttachment(pdfFile.getOriginalFilename(), pdfFile);
+
+            mailSender.send(message);
+            return new ResponseEntity<>(Collections.singletonMap("message", "Email đã được gửi thành công"), HttpStatus.OK);
+        } catch (Exception e) {
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("status", 500);
+            errorResponse.put("message", "Đã xảy ra lỗi khi gửi email: " + e.getMessage());
+            errorResponse.put("timeStamp", System.currentTimeMillis());
+            return new ResponseEntity<>(errorResponse, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
     }
 }

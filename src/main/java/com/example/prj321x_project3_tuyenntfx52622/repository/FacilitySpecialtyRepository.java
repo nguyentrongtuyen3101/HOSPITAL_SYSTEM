@@ -11,4 +11,5 @@ public interface FacilitySpecialtyRepository extends JpaRepository<FacilitySpeci
     public boolean existsByFacilityAndSpecialty(MedicalFacility facility, Specialty specialty);
     public FacilitySpecialty findByFacility(MedicalFacility facility);
     public List<FacilitySpecialty> findAllByFacility(MedicalFacility facility);
+
 }

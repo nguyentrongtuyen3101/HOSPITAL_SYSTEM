@@ -13,4 +13,5 @@ public interface UserFunction_service {
     public List<Appointment> getAppointmentsbyUser(User user) throws DataException;
     public void cancelAppoitment(Long id,String cancelReason,String mail)throws DataException;
     public List<MedicalFacility> getMedicalFacilities();
+    public  List<MedicalFacility> getMedicalFacilitys(Integer searchType,String Keyword,float gia,Long specialtyId) throws DataException;
 }

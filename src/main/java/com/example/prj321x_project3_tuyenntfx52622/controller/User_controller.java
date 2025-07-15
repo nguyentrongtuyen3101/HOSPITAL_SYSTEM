@@ -1,6 +1,7 @@
 package com.example.prj321x_project3_tuyenntfx52622.controller;
 
 import com.example.prj321x_project3_tuyenntfx52622.DTO.AppointmentRequest;
+import com.example.prj321x_project3_tuyenntfx52622.DTO.FacilityServiceRequest;
 import com.example.prj321x_project3_tuyenntfx52622.DTO.FacilityServiceResponse;
 import com.example.prj321x_project3_tuyenntfx52622.DTO.MedicalFacilityResponse;
 import com.example.prj321x_project3_tuyenntfx52622.entity.*;
@@ -157,5 +158,47 @@ public class User_controller {
             medicalFacilityResponseList.add(medicalFacilityResponse);
         }
         return medicalFacilityResponseList;
+    }
+    @GetMapping("/timkiemchung")
+    public ResponseEntity<?> getTimkiemchung(@RequestBody FacilityServiceRequest facilityServiceRequest){
+        String keyword="";
+        if(facilityServiceRequest.getSearchType()==1)keyword=facilityServiceRequest.getName();
+        else if(facilityServiceRequest.getSearchType()==2)keyword=facilityServiceRequest.getAddress();
+        List<MedicalFacility>medicalFacilityList=new ArrayList<>();
+        if(keyword.length()>0)medicalFacilityList=userFunction_service.getMedicalFacilitys(facilityServiceRequest.getSearchType(),keyword,Float.parseFloat(facilityServiceRequest.getGia()),facilityServiceRequest.getSpecialtyId());
+        else medicalFacilityList=userFunction_service.getMedicalFacilities();
+        List<Map<String,Object>> response = new ArrayList<>();
+        Map<String,Object> cosoyte = new LinkedHashMap<>();
+        cosoyte.put("Co So Y Te",medicalFacilityList.stream()
+                .map(medicalFacility -> {
+                    Map<String,Object> medicalFacilityInfo = new HashMap<>();
+                    medicalFacilityInfo.put("name",medicalFacility.getName());
+                    medicalFacilityInfo.put("address",medicalFacility.getAddress());
+                    medicalFacilityInfo.put("gmail",medicalFacility.getEmail());
+                    medicalFacilityInfo.put("phone",medicalFacility.getPhone());
+                    medicalFacilityInfo.put("description",medicalFacility.getDescription());
+                    List<FacilitySpecialty>facilitySpecialtyList=facilitySpecialtyRepository.findAllByFacility(medicalFacility);
+                    medicalFacilityInfo.put("chuyen khoa",facilitySpecialtyList.stream().map(facilitySpecialty ->facilitySpecialty.getSpecialty().getName()).collect(Collectors.joining(", ")));
+                    List<FacilityService>facilityServiceList=facilityServiceRepository.findFacilityServicesByFacility(medicalFacility);
+                    medicalFacilityInfo.put("service",facilityServiceList.stream().map(facilityService -> {
+                        Map<String,Object> facilityServiceInfo = new HashMap<>();
+                        facilityServiceInfo.put("name",facilityService.getService().getServiceName());
+                        facilityServiceInfo.put("gia",facilityService.getCost()+" USD");
+                        return facilityServiceInfo;
+                    }));
+                    return medicalFacilityInfo;
+                }));
+        response.add(cosoyte);
+        return new ResponseEntity<>(response, HttpStatus.OK);
+    }
+    @GetMapping("/chuyenkhoanoibat")
+    public ResponseEntity<?> getChuyenkhoanoibat(){
+        List<Specialty> specialty=specialtyRepository.findTop5ByOrderBySearchnumberDesc();
+        List<Map<String,Object>> response=specialty.stream().map(specialty1 -> {
+            Map<String,Object> specialtyInfo = new HashMap<>();
+            specialtyInfo.put("name",specialty1.getName());
+            return specialtyInfo;
+        }).collect(Collectors.toList());
+        return new ResponseEntity<>(response, HttpStatus.OK);
     }
 }

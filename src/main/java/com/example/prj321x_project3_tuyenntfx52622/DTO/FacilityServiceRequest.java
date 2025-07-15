@@ -10,6 +10,8 @@ public class FacilityServiceRequest {
     private String email;
     private String description;
     private String gia;
+    private Integer searchType;
+    private Long specialtyId;
     private List<Long> serviceIds;
-    private List<Long> facilityIds;
+    private List<Long> specialtyIds;
 }

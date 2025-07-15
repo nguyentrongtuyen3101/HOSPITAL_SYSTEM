@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -17,13 +18,15 @@ public class UserFunction_service_imp implements UserFunction_service{
     @Autowired
     private DoctorRepository doctorRepository;
     @Autowired
-    private MedicalServiceRepository medicalServiceRepository;
+    private FacilitySpecialtyRepository facilitySpecialtyRepository;
     @Autowired
     private MedicalFacilityRepository medicalFacilityRepository;
     @Autowired
     private FacilityServiceRepository facilityServiceRepository;
     @Autowired
     private UserRepository userRepository;
+    @Autowired
+    private SpecialtyRepository  specialtyRepository;
     @Override
     @Transactional
     public Appointment createAppointment(Appointment appointment)
@@ -64,5 +67,74 @@ public class UserFunction_service_imp implements UserFunction_service{
     public List<MedicalFacility> getMedicalFacilities()
     {
         return medicalFacilityRepository.findAll();
+    }
+    @Override
+    @Transactional
+    public  List<MedicalFacility> getMedicalFacilitys(Integer searchType,String Keyword,float gia,Long specialtyId)
+    {
+        List<MedicalFacility> medicalFacilityList=null;
+        if(searchType==1)
+        {
+            medicalFacilityList= medicalFacilityRepository.findAllByNameContainingIgnoreCase(Keyword.trim());
+        }
+        if(searchType==2)
+        {
+            medicalFacilityList= medicalFacilityRepository.findAllByAddressContainingIgnoreCase(Keyword.trim());
+        }
+
+        if(gia==0&&specialtyId==0)return medicalFacilityList;
+        else if(gia!=0&&specialtyId==0)
+        {
+            List<MedicalFacility> medicalFacilityList1=new ArrayList<>(medicalFacilityList);
+            for (MedicalFacility medicalFacility : medicalFacilityList)
+            {
+                List<FacilityService>facilityServices=facilityServiceRepository.findFacilityServicesByFacility(medicalFacility);
+                float total=0;
+                for(FacilityService facilityService:facilityServices)
+                {
+                    total+=Float.parseFloat(facilityService.getCost());
+                }
+                float giaTB=total/facilityServices.size();
+                if((giaTB>gia&&giaTB-gia>=50)||(giaTB<gia&&gia-giaTB>=50))medicalFacilityList1.remove(medicalFacility);
+            }
+            if(medicalFacilityList1.size()==0)throw new DataException("Khong co du lieu");
+            return medicalFacilityList1;
+        } else if (gia==0&&specialtyId!=0)
+        {
+            List<MedicalFacility> medicalFacilityList1=new ArrayList<>(medicalFacilityList);
+            for (MedicalFacility medicalFacility : medicalFacilityList)
+            {
+               if(!facilitySpecialtyRepository.existsByFacilityAndSpecialty(medicalFacility,specialtyRepository.findById(specialtyId).get()))medicalFacilityList1.remove(medicalFacility);
+            }
+            if(medicalFacilityList1.size()==0)throw new DataException("Khong co du lieu");
+            Specialty specialty=specialtyRepository.findById(specialtyId).get();
+            specialty.setSearchnumber(specialty.getSearchnumber()+1);
+            specialtyRepository.save(specialty);
+            return medicalFacilityList1;
+        }
+        else {
+            List<MedicalFacility> medicalFacilityList1=new ArrayList<>(medicalFacilityList);
+            for (MedicalFacility medicalFacility : medicalFacilityList)
+            {
+                List<FacilityService>facilityServices=facilityServiceRepository.findFacilityServicesByFacility(medicalFacility);
+                float total=0;
+                for(FacilityService facilityService:facilityServices)
+                {
+                    total+=Float.parseFloat(facilityService.getCost());
+                }
+                float giaTB=total/facilityServices.size();
+                if((giaTB>gia&&giaTB-gia>=50)||(giaTB<gia&&gia-giaTB>=50))medicalFacilityList1.remove(medicalFacility);
+            }
+            List<MedicalFacility> medicalFacilityList2=new ArrayList<>(medicalFacilityList1);
+            for (MedicalFacility medicalFacility : medicalFacilityList1)
+            {
+                if(!facilitySpecialtyRepository.existsByFacilityAndSpecialty(medicalFacility,specialtyRepository.findById(specialtyId).get()))medicalFacilityList2.remove(medicalFacility);
+            }
+            if(medicalFacilityList2.size()==0)throw new DataException("Khong co du lieu");
+            Specialty specialty=specialtyRepository.findById(specialtyId).get();
+            specialty.setSearchnumber(specialty.getSearchnumber()+1);
+            specialtyRepository.save(specialty);
+            return medicalFacilityList2;
+        }
     }
 }
